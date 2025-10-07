@@ -1,0 +1,9 @@
+postmarketos:
+    hosts:
+        lg-hammerhead:
+            ansible_host: 192.168.1.237
+        samsung-m0:
+            ansible_host: 192.168.1.51
+    vars:
+        ansible_user: pm
+        ansible_become_password: mysecurepassword

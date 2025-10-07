@@ -1,0 +1,129 @@
+- name: init
+  hosts: postmarketos
+  become: true
+  become_method: doas
+  gather_facts: false
+
+  vars:
+    # ---- Portainer variables ----
+    portainer_name: portainer
+    portainer_image: portainer/portainer-ce:latest
+    portainer_ports:
+      - "8000:8000"
+      - "9443:9443"
+    portainer_volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+    # ---- Portainer Agent variables ----
+    portainer_agent_name: portainer_agent
+    portainer_agent_image: portainer/agent:2.31.3
+    portainer_agent_ports:
+      - "9001:9001"
+    portainer_agent_volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+      - /:/host
+
+  collections:
+    - community.docker
+
+  tasks:
+    - name: Update apk package registry
+      ansible.builtin.command: apk update
+      changed_when: false
+
+    - name: Ensure python3 and pip are installed (Alpine)
+      ansible.builtin.apk:
+        name:
+          - python3
+          - py3-pip
+        state: present
+
+    - name: Install Docker
+      ansible.builtin.apk:
+        name:
+          - docker
+          - docker-cli
+          - docker-compose
+        state: present
+      register: docker_install
+
+    - name: Enable Docker service
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+
+    - name: Start Docker service
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+    
+    # ------------------------------
+    # Portainer UI systemd service
+    # ------------------------------
+    - name: Create Portainer service unit
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/{{ portainer_name }}.service
+        content: |
+          [Unit]
+          Description=Portainer CE
+          Requires=docker.service
+          After=docker.service
+
+          [Service]
+          Restart=always
+          ExecStartPre=-/usr/bin/docker stop {{ portainer_name }}
+          ExecStartPre=-/usr/bin/docker rm {{ portainer_name }}
+          ExecStartPre=/usr/bin/docker pull {{ portainer_image }}
+          ExecStart=/usr/bin/docker run \
+            {% for p in portainer_ports %}-p {{ p }} {% endfor %} \
+            --name {{ portainer_name }} \
+            --restart=always \
+            {% for v in portainer_volumes %}-v {{ v }} {% endfor %} \
+            {{ portainer_image }}
+          ExecStop=/usr/bin/docker stop {{ portainer_name }}
+
+          [Install]
+          WantedBy=multi-user.target
+
+    # ------------------------------
+    # Portainer Agent systemd service
+    # ------------------------------
+    - name: Create Portainer Agent service unit
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/{{ portainer_agent_name }}.service
+        content: |
+          [Unit]
+          Description=Portainer Agent
+          Requires=docker.service
+          After=docker.service
+
+          [Service]
+          Restart=always
+          ExecStartPre=-/usr/bin/docker stop {{ portainer_agent_name }}
+          ExecStartPre=-/usr/bin/docker rm {{ portainer_agent_name }}
+          ExecStartPre=/usr/bin/docker pull {{ portainer_agent_image }}
+          ExecStart=/usr/bin/docker run \
+            {% for p in portainer_agent_ports %}-p {{ p }} {% endfor %} \
+            --name {{ portainer_agent_name }} \
+            --restart=always \
+            {% for v in portainer_agent_volumes %}-v {{ v }} {% endfor %} \
+            {{ portainer_agent_image }}
+          ExecStop=/usr/bin/docker stop {{ portainer_agent_name }}
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable and start Portainer services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+      loop:
+        - "{{ portainer_name }}"
+        - "{{ portainer_agent_name }}"
