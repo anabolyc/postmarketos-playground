@@ -1,6 +1,8 @@
 # Overview
 
-This project automates the building and installation of a customized postmarketOS image for a specific phone models ([Samsung Galaxy S3]https://wiki.postmarketos.org/wiki/Samsung_Galaxy_S_III_(samsung-m0) and [Google Nexus 5](https://wiki.postmarketos.org/wiki/Google_Nexus_5_(lg-hammerhead))). The scripts provided streamline the process of preparing the device for immediate use by pre-configuring WiFi credentials and setting up an auto-start monitoring environment.
+<img width="980" height="1223" alt="image" src="https://github.com/user-attachments/assets/68e7a57e-5d05-4c1d-90c9-bcfe7fc24111" />
+
+This project automates the building and installation of a customized postmarketOS image for a specific phone models ([Samsung Galaxy S3](https://wiki.postmarketos.org/wiki/Samsung_Galaxy_S_III_(samsung-m0)) and [Google Nexus 5](https://wiki.postmarketos.org/wiki/Google_Nexus_5_(lg-hammerhead))). The scripts provided streamline the process of preparing the device for immediate use by pre-configuring WiFi credentials and setting up an auto-start monitoring environment.
 
 # Purpose
 
@@ -12,7 +14,7 @@ Build a postmarketOS image tailored for the Samsung M0 and LG Hammerhead devices
 
 ### Install pmbootstrap
 
-Pull into the root folder by clonning the code and installing it in the venv (preferrably)
+Pull into the root folder by cloning the code and installing it in the `.venv` (preferably)
 
 ```
 git clone https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
@@ -21,9 +23,30 @@ pip install .
 pmbootstrap --version
 ```
 
+```
+(.venv) andriy@hp-z440:~/devices/_pm/pmbootstrap$ pip install .
+Processing /media/andriy/storage/devices/_pm/pmbootstrap
+  Installing build dependencies ... done
+  Getting requirements to build wheel ... done
+  Preparing metadata (pyproject.toml) ... done
+Building wheels for collected packages: pmbootstrap
+  Building wheel for pmbootstrap (pyproject.toml) ... done
+  Created wheel for pmbootstrap: filename=pmbootstrap-3.6.0-py3-none-any.whl size=313876 sha256=48bd80c3fb9d738fe97d11763323681531741bac1c464d9384a059ee2b7a7508
+  Stored in directory: /tmp/pip-ephem-wheel-cache-5o_hcc7w/wheels/84/66/05/3fa0c3b75d8df75dfbc95e3c27cb85914253debcad6ccad1f8
+Successfully built pmbootstrap
+Installing collected packages: pmbootstrap
+  Attempting uninstall: pmbootstrap
+    Found existing installation: pmbootstrap 3.6.0
+    Uninstalling pmbootstrap-3.6.0:
+      Successfully uninstalled pmbootstrap-3.6.0
+Successfully installed pmbootstrap-3.6.0
+(.venv) andriy@hp-z440:~/devices/_pm/pmbootstrap$ pmbootstrap --version
+3.6.0
+```
+
 ### build.sh
 
-Uses pmbootstrap to prepare the root filesystem. Injects WiFi credentials into NetworkManager so the device connects to the specified SSID on startup. Adds an autologin script for the user pm that launches a tmux session with monitoring tools (htop and journalctl, requires `systemd`). Sets up a systemd service to automatically log in the pm user on tty1 and start the monitoring environment.
+Uses `pmbootstrap` to prepare the root filesystem. Injects WiFi credentials into NetworkManager so the device connects to the specified SSID on startup. Adds an autologin script for the user pm that launches a tmux session with monitoring tools (htop and journalctl, requires `systemd`). Sets up a systemd service to automatically log in the pm user on tty1 and start the monitoring environment.
 
 ### install.sh
 
@@ -31,9 +54,9 @@ Runs pmbootstrap install to flash the prepared postmarketOS image onto the targe
 
 ### Post install
 
-After image flashed and device booted, ssh keys are already baked into the image, so you only need to figure out the IP address of the device and ssh into it.
-- You can either look up IP address in your router settings, as it would lease IP address over DHCP 
-- You can connect using USB cable and simply ssh into the device on `172.16.42.1` address and check it from within
+After the image flashed and the device booted, the SSH keys are already baked into the image, so you only need to figure out the IP address of the device and SSH into it.
+- You can either look up the IP address in your router settings, as it would lease an IP address over DHCP 
+- You can connect using a USB cable and simply SSH into the device on the `172.16.42.1` address and check it from within
 
 ```
 ssh pm@172.16.42.1
@@ -60,4 +83,11 @@ wlan0     Link encap:Ethernet  HWaddr 2E:F8:6D:D3:9C:A0
 
 ## Workloads
 
-I've created ansible scripts to deploy some workloads in automated way to the devices. In the `playbooks` folder there is a playbook that installs docker and portainer on top of it, both UI app and agent, so it can be managed from another portainer instance.
+I've created Ansible scripts to deploy some workloads in an automated way to the devices. In the `playbooks` folder, there is a playbook that installs Docker and Portainer on top of it, both the UI app and agent, so it can be managed from another Portainer instance.
+
+<img width="1620" height="575" alt="image" src="https://github.com/user-attachments/assets/9b3574c1-eb49-4a7e-9fc3-8b1ed884d67d" />
+
+## Links
+
+- [Install Docker natively on Android Phone and use it as a Home Server](https://crackoverflow.com/docs/system_administration/containerization/install-docker-natively-on-android-phone-and-use-it-as-a-home-server/)
+
